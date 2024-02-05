@@ -1,16 +1,32 @@
-import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
+import { TransactionApigateway } from "./apigateway";
+import { TransactionDatabase as DemoDatabase } from "./database";
+import { TransactionEventBus } from "./eventbus";
+import { TransactionMicroservice } from "./microservice";
+import { TransactionQueue } from "./queue";
 
 export class ListenToYourselfEdaStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
+    const database = new DemoDatabase(this, "TransactionDatabase");
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'ListenToYourselfEdaQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    const microservice = new TransactionMicroservice(this, "TransactionMicroservice", {
+      transactionTable: database.transactionTable,
+    });
+
+    const apigateway = new TransactionApigateway(this, "TransactionApiGateway", {
+      transactionMicroservice: microservice.transactionMicroservice,
+    });
+
+    const queue = new TransactionQueue(this, "TransactionQueue", {
+      consumer: microservice.transactionMicroservice,
+    });
+
+    const eventbus = new TransactionEventBus(this, "TransactionEventBus", {
+      publisherFunction: microservice.transactionMicroservice,
+      targetQueue: queue.transactionQueue,
+    });
   }
 }
