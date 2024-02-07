@@ -3,20 +3,19 @@ import { IFunction } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 
 interface TransactionApiGatewayProps {
-  transactionMicroservice: IFunction;
+  transactionApiMicroservice: IFunction;
 }
 
 export class TransactionApigateway extends Construct {
   constructor(scope: Construct, id: string, props: TransactionApiGatewayProps) {
     super(scope, id);
-
-    this.createTransactionApi(props.transactionMicroservice);
+    this.createTransactionApi(props.transactionApiMicroservice);
   }
 
-  private createTransactionApi(transactionMicroservice: IFunction) {
+  private createTransactionApi(transactionApiMicroservice: IFunction) {
     const apigw = new LambdaRestApi(this, "transactionApi", {
       restApiName: "Transaction Service",
-      handler: transactionMicroservice,
+      handler: transactionApiMicroservice,
       proxy: false,
     });
 

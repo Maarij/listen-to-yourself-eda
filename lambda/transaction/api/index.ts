@@ -1,4 +1,7 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import {
+  EventBridgeClient,
+  PutEventsCommand,
+} from "@aws-sdk/client-eventbridge";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { v4 as uuidv4 } from "uuid";
 
@@ -11,7 +14,6 @@ export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   console.log("request:", JSON.stringify(event, undefined, 2));
-  const ddbClient = new DynamoDBClient();
 
   try {
     switch (event.requestContext.httpMethod) {
@@ -72,5 +74,29 @@ const prepareEvent = (event: APIGatewayProxyEvent): TransactionEvent => {
 };
 
 const publishTransactionEvent = async (event: TransactionEvent) => {
-  
-}
+  console.log("publishTransactionEvent: ", event);
+
+  try {
+    const params = {
+      Entries: [
+        {
+          Source: process.env.EVENT_SOURCE,
+          Detail: JSON.stringify(event),
+          DetailType: process.env.EVENT_DETAILTYPE,
+          Resources: [],
+          EventBusName: process.env.EVENT_BUSNAME,
+        },
+      ],
+    };
+
+    const ebClient = new EventBridgeClient();
+    const data = await ebClient.send(new PutEventsCommand(params));
+
+    console.log("Success, event sent; requestId:", data);
+
+    return data;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};

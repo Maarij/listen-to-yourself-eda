@@ -22,8 +22,8 @@ export class TransactionEventBus extends Construct {
       enabled: true,
       description: "Do some processing for a transaction that occurred",
       eventPattern: {
-        source: ["assets.transaction.process"],
-        detailType: ["ProcessBasket"],
+        source: ["transaction.process"],
+        detailType: ["ProcessTransaction"],
       },
       ruleName: "ProcessTransactionRule",
     });

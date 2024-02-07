@@ -1,9 +1,10 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
+import { TransactionApiMicroservice } from "./api-microservice";
 import { TransactionApigateway } from "./apigateway";
 import { TransactionDatabase as DemoDatabase } from "./database";
+import { TransactionEventMicroservice } from "./event-microservice";
 import { TransactionEventBus } from "./eventbus";
-import { TransactionMicroservice } from "./microservice";
 import { TransactionQueue } from "./queue";
 
 export class ListenToYourselfEdaStack extends cdk.Stack {
@@ -12,20 +13,33 @@ export class ListenToYourselfEdaStack extends cdk.Stack {
 
     const database = new DemoDatabase(this, "TransactionDatabase");
 
-    const microservice = new TransactionMicroservice(this, "TransactionMicroservice", {
-      transactionTable: database.transactionTable,
-    });
+    const apiMicroservice = new TransactionApiMicroservice(
+      this,
+      "TransactionMicroservice"
+    );
 
-    const apigateway = new TransactionApigateway(this, "TransactionApiGateway", {
-      transactionMicroservice: microservice.transactionMicroservice,
-    });
+    const apigateway = new TransactionApigateway(
+      this,
+      "TransactionApiGateway",
+      {
+        transactionApiMicroservice: apiMicroservice.transactionApiMicroservice,
+      }
+    );
+
+    const eventMicroservice = new TransactionEventMicroservice(
+      this,
+      "TransactionEventMicroservice",
+      {
+        database: database.transactionTable,
+      }
+    );
 
     const queue = new TransactionQueue(this, "TransactionQueue", {
-      consumer: microservice.transactionMicroservice,
+      consumer: eventMicroservice.transactionEventMicroservice,
     });
 
     const eventbus = new TransactionEventBus(this, "TransactionEventBus", {
-      publisherFunction: microservice.transactionMicroservice,
+      publisherFunction: apiMicroservice.transactionApiMicroservice,
       targetQueue: queue.transactionQueue,
     });
   }
